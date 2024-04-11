@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 import telebot
 from telebot import types
@@ -12,7 +13,7 @@ def start(message):
     conn = sqlite3.connect('database/list.db')
     cur = conn.cursor()
     
-    cur.execute('CREATE TABLE IF NOT EXISTS users (id int auto_increment primary key, chat_id blob, word blob, username blob)')
+    cur.execute('CREATE TABLE IF NOT EXISTS "users" ("id" INTEGER NOT NULL, "chat_id" blob, "word" blob, "translate" blob, watchlist INTEGER,"username" blob, PRIMARY KEY("id" AUTOINCREMENT));')
     conn.commit()
     
     cur.close()
@@ -37,16 +38,24 @@ def home(message):
     bot.send_photo(message.chat.id, photo=open('/Users/bohdanprokopchuk/Desktop/dictionary_bot/home_photo.png', 'rb'), reply_markup=murkup)
 
 
-
     #add word to list
+    
 def click_add(message):
-    
+    global word
     word = message.text.lower()
+    print("word", word)    
+    
+def click_add2(message):
+    
+    print('word2' ,word)
+    
+    translate = message.text.lower()
+    
+    print('trans', translate)
 
-    
     if len(word) >= 1: 
-    
-        conn = sqlite3.connect('list.db')
+        
+        conn = sqlite3.connect('database/list.db')
         c = conn.cursor()
         
         bot.send_message(message.chat.id, text=word)
@@ -56,42 +65,50 @@ def click_add(message):
         chat_id = str(chat_id)
         username = message.from_user.username
         print('username:', username)
-        c.execute('INSERT INTO users (chat_id, word, username) VALUES ("%s", "%s", "%s")' % (chat_id, word, username))
+        
+        c.execute('INSERT INTO users (chat_id, word, translate, watchlist, username) VALUES ("%s", "%s", "%s", "%d", "%s")' % (chat_id, word, translate, 0, username))
         
         c.execute('SELECT * FROM users')
         users = c.fetchall()
         for i in users:
-            print(f'{i[1]} = {i[2]}')
+            print(f'{i[2]} = {i[3]}')
         conn.commit()
         c.close()
         conn.close()
         
         bot.send_message(message.chat.id, text='Successfully added✅')
     else:
-        
         bot.send_message(message.chat.id, text='The word is already in the dictionary❌')
-    # if word == 'NOT IN DATABASE':
-    #     bot.send_message(message.chat.id, text='Successfully added✅')
-    # else:
-    #     bot.send_message(message.chat.id, text='The word is already in the dictionary❌')
-        
         
     #remove word from list
 def click_remove(message):
-    if message.text == '':
+    
+    word = message.text.lower()
+    
+    conn = sqlite3.connect('database/list.db')
+    c = conn.cursor()
+    
+    c.execute(f'SELECT * FROM users WHERE word LIKE "{word}" OR translate LIKE "{word}"')
+    temp = c.fetchall()
+    
+    if len(temp) > 0:
+        c.execute(f'DELETE FROM users WHERE WORD = "{word}" OR TRANSLATE = "{word}"')
         bot.send_message(message.chat.id, text='Successfully removed✅')
     else:
-        bot.send_message(message.chat.id, text="This word isn't in the dictionary❗️")
-
+        bot.send_message(message.chat.id, text="Your dictionary is empty or this word is not in your dictionary❗️")
+        
+    conn.commit()
+    c.close()
+    conn.close()    
+    
     #show all elements in list
 def click_show(message):
     
-    conn = sqlite3.connect('list.db')
+    conn = sqlite3.connect('database/list.db')
     c = conn.cursor()
     
     chat_id = message.chat.id
     chat_id = chat_id
-    print(f'chatid:' , chat_id)
     
     c.execute('SELECT * FROM users WHERE chat_id=("%s")' % (chat_id))
     users = c.fetchall()
@@ -99,10 +116,8 @@ def click_show(message):
     if len(users) > 0:
         items = ''
         for i in users:
-            items += i[2]
-            print(i[2])
-            print(len(i[2]))
-            items +='\n'
+            print(i)
+            items += f'{i[2]} - {i[3]}\n' 
             
         bot.send_message(message.chat.id, text=items)        
     else:
@@ -113,6 +128,27 @@ def click_show(message):
     c.close()
     conn.close()
     
+    #clear all items in list
+def click_clear(message):
+    
+    conn = sqlite3.connect('database/list.db')
+    c = conn.cursor()
+    
+    chat_id = message.chat.id
+    chat_id = chat_id
+
+    if c.execute('DELETE FROM users WHERE chat_id=("%s")' % (chat_id)).rowcount > 0:
+        conn.commit()
+        bot.send_message(message.chat.id, text='Successfully cleared✅')
+    else:
+        bot.send_message(message.chat.id, text='Your dictionary is empty😑')
+        
+    conn.commit()
+    
+    c.close()
+    conn.close()
+    
+    
     #button click
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_message(callback):
@@ -120,13 +156,13 @@ def callback_message(callback):
         bot.register_next_step_handler(callback.message, click_add)
         bot.register_next_step_handler(callback.message, click_add2)
     if callback.data == 'remove':
-        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+        bot.register_next_step_handler(callback.message, click_remove)
     if callback.data == 'find':
         pass
     if callback.data == 'show':
         click_show(callback.message)
     if callback.data == 'clear':
-        pass
+        click_clear(callback.message)
     if callback.data == 'pin':
         bot.pin_chat_message(callback.message.chat.id, callback.message.message_id, disable_notification=True)
     if callback.data == 'close':
@@ -134,21 +170,20 @@ def callback_message(callback):
         
     #messages or actions after commads
 @bot.message_handler(commands=['add'])
-def start(message):
-    pass
-
-
+def add(message):
+    bot.register_next_step_handler(message, click_add)
+    
 @bot.message_handler(commands=['remove'])
-def start(message):
-    pass
+def remove(message):
+    bot.register_next_step_handler(message, click_remove)
     
 @bot.message_handler(commands=['show'])
-def start(message):
-    bot.send_message(message.chat.id, 'hello')
+def show(message):
+    click_show(message)
     
 @bot.message_handler(commands=['clear'])
-def start(message):
-    bot.send_message(message.chat.id, 'hello')
+def clear(message):
+    click_clear(message)
 
     #list of commands
 @bot.message_handler(commands=['help'])
