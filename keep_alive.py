@@ -42,7 +42,7 @@ def get_db_file():
     if os.path.exists(db_path):
         return send_file(db_path, as_attachment=True)
     else:
-        return {"error": "Database file not found"}, 404
+        return "", 200  # Return empty response with 200 status code
 
 def upload_db_to_drive():
     db_path = os.path.join(os.getcwd(), 'database', 'list.db')
