@@ -24,6 +24,10 @@ def authenticate_google_drive():
     gauth.SaveCredentialsFile("credentials.json")  # Save credentials back to file
     return GoogleDrive(gauth)
 
+@app.route('/')
+def index():
+    return "Alive"
+
 # Function to upload file to Google Drive
 def upload_to_google_drive(drive, file_path):
     file_name = os.path.basename(file_path)
