@@ -1,5 +1,4 @@
 import sqlite3
-from telebot import types
 
 #add word and it's translation to list.db
 def click_add(bot, message):
@@ -7,7 +6,8 @@ def click_add(bot, message):
 
     # Function to handle the next step after prompting for translation
     def handle_translation_step(message):
-        translation = message.text.strip()
+        
+        translation = message.text.strip().lower()
 
         if translation:
             word = user_input
@@ -19,9 +19,9 @@ def click_add(bot, message):
             chat_id = message.chat.id
             username = message.from_user.username
 
-            c.execute('INSERT INTO users (chat_id, word, translate, watchlist, username) VALUES (?, ?, ?, ?, ?)',
-                      (chat_id, word, translation, 0, username))
+            c.execute('INSERT INTO users (chat_id, word, translate, watchlist, username) VALUES (?, ?, ?, ?, ?)', (chat_id, word, translation, 0, username))
             conn.commit()
+            
             bot.send_message(message.chat.id, text='Successfully added✅')
 
             c.close()

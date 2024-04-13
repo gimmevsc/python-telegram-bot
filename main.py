@@ -4,6 +4,9 @@ import telebot
 from telebot import types
 import sqlite3
 from util.clicks import click_add, click_clear, click_remove, click_show, click_find, click_add_favourite, click_remove_favourite, click_show_favourite, click_clear_favourite
+from keep_alive import keep_alive
+
+keep_alive()
 
 bot = telebot.TeleBot('7049056882:AAGwFBH9Yrv9Ruy81IrdQQmyMeGWJd-0dBw')
 
@@ -45,7 +48,7 @@ def start(message):
     conn = sqlite3.connect('database/list.db')
     cur = conn.cursor()
     
-    cur.execute('CREATE TABLE IF NOT EXISTS "users" ("id" INTEGER NOT NULL, "chat_id" blob, "word" blob, "translate" blob, watchlist INTEGER,"username" blob, PRIMARY KEY("id" AUTOINCREMENT));')
+    cur.execute('CREATE TABLE IF NOT EXISTS "users" ("id" INTEGER NOT NULL, "chat_id" blob, "word" blob, "translate" blob, "watchlist" INTEGER, "username" blob, PRIMARY KEY("id" AUTOINCREMENT));')
     conn.commit()
     
     cur.close()
