@@ -3,12 +3,14 @@
 import telebot
 from telebot import types
 import sqlite3
+import os
 from util.clicks import click_add, click_clear, click_remove, click_show, click_find, click_add_favourite, click_remove_favourite, click_show_favourite, click_clear_favourite
 from keep_alive import keep_alive
 
 keep_alive()
 
-bot = telebot.TeleBot('7049056882:AAGwFBH9Yrv9Ruy81IrdQQmyMeGWJd-0dBw')
+bot = telebot(token=os.environ.get('7049056882:AAGwFBH9Yrv9Ruy81IrdQQmyMeGWJd-0dBw'))
+# bot = telebot.TeleBot('7049056882:AAGwFBH9Yrv9Ruy81IrdQQmyMeGWJd-0dBw')
 
 @bot.message_handler(commands=['start'])
 def start(message):
