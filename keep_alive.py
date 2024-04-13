@@ -28,6 +28,14 @@ def authenticate_google_drive():
 def index():
     return "Alive"
 
+@app.route('/download_db_file')
+def download_db_file():
+    db_path = os.path.join(os.getcwd(), 'database', 'list.db')
+    if os.path.exists(db_path):
+        return send_file(db_path, as_attachment=True)
+    else:
+        return {"error": "Database file not found"}, 200
+
 # Function to upload file to Google Drive
 def upload_to_google_drive(drive, file_path):
     file_name = os.path.basename(file_path)
@@ -40,14 +48,7 @@ def upload_to_google_drive(drive, file_path):
     file.Upload()
     print(f"Uploaded {file_name} to Google Drive successfully!")
 
-@app.route('/get_db_file')
-def get_db_file():
-    db_path = os.path.join(os.getcwd(), 'database', 'list.db')
-    if os.path.exists(db_path):
-        return send_file(db_path, as_attachment=True)
-    else:
-        return "", 200  # Return empty response with 200 status code
-
+# Function to upload database file to Google Drive
 def upload_db_to_drive():
     db_path = os.path.join(os.getcwd(), 'database', 'list.db')
     if os.path.exists(db_path):
@@ -56,19 +57,16 @@ def upload_db_to_drive():
     else:
         print("Database file not found. Skipping upload to Google Drive.")
 
-def run():
-    app.run(host='0.0.0.0', port=8080)
-
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
-
-if __name__ == "__main__":
-    keep_alive()
-
+# Main function to start the Flask app and scheduling loop
+def main():
     # Schedule upload to Google Drive every 5 minutes
     schedule.every(5).minutes.do(upload_db_to_drive)
 
     while True:
         schedule.run_pending()
         time.sleep(1)
+
+if __name__ == "__main__":
+    t = Thread(target=main)
+    t.start()
+    app.run(host='0.0.0.0', port=8080)
