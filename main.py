@@ -75,7 +75,7 @@ def home(message):
     murkup.row(btn4, btn5)
     murkup.row(btn10, btn11, btn9)
     murkup.row(btn6, btn8, btn7)
-    bot.send_photo(message.chat.id, photo=open('/Users/bohdanprokopchuk/Desktop/dictionary_bot/home_photo.png', 'rb'), reply_markup=murkup)
+    bot.send_photo(message.chat.id, photo=open('home_photo.png', 'rb'), reply_markup=murkup)
 
 
     #keyboard buttons
