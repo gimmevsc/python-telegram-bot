@@ -21,10 +21,9 @@ def click_add(bot, message):
             c = conn.cursor()
 
             chat_id = message.chat.id
-            message_date = message.date
             username = message.from_user.username
 
-            c.execute('INSERT INTO users (chat_id, word, translation, favourite, username, date) VALUES (?, ?, ?, ?, ?, ?)', (chat_id, word, translation, 0, username, message_date))
+            c.execute('INSERT INTO users (chat_id, word, translate, watchlist, username) VALUES (?, ?, ?, ?, ?)', (chat_id, word, translation, 0, username))
             conn.commit()
             
             bot.send_message(message.chat.id, text='Successfully added✅')
@@ -78,11 +77,11 @@ def click_remove(bot, message):
     
     chat_id = message.chat.id
     
-    c.execute('SELECT * FROM users WHERE chat_id = ? AND (word = ? OR translation = ?)', (chat_id, word, word))
+    c.execute('SELECT * FROM users WHERE chat_id = ? AND (word = ? OR translate = ?)', (chat_id, word, word))
     temp = c.fetchall()
     
     if len(temp) > 0:
-        c.execute('DELETE FROM users WHERE chat_id = ? AND (word = ? OR translation = ?)', (chat_id, word, word))
+        c.execute('DELETE FROM users WHERE chat_id = ? AND (word = ? OR translate = ?)', (chat_id, word, word))
         bot.send_message(message.chat.id, text='Successfully removed✅')
     else:
         bot.send_message(message.chat.id, text="Your dictionary is empty or this word is not in your dictionary❗️")
@@ -93,19 +92,8 @@ def click_remove(bot, message):
 
 
     #print user's words and translations
-def send_chunked_message(bot, chat_id, text):
-    max_message_length = 4000
-    while text:
-        if len(text) > max_message_length:
-            chunk = text[:max_message_length]
-            text = text[max_message_length:]
-        else:
-            chunk = text
-            text = ""
-        bot.send_message(chat_id, chunk, parse_mode='html')
-
-
 def click_show(bot, message):
+    
     conn = sqlite3.connect('database/list.db')
     c = conn.cursor()
     
@@ -121,8 +109,7 @@ def click_show(bot, message):
             items += f'{counter}. {el[2]} - {el[3]}\n'
             counter+=1 
             
-        full_message = '<b><u>Your dictionary:</u></b>\n\n'+ items
-        send_chunked_message(bot, message.chat.id, full_message)
+        bot.send_message(message.chat.id, text='<b><u>Your dictionary:</u></b>\n\n'+ items, parse_mode='html')        
     else:
         bot.send_message(message.chat.id, text='Your dictionary is empty😑')    
     
@@ -130,7 +117,6 @@ def click_show(bot, message):
     
     c.close()
     conn.close()
-
     
 
     #find word or translation in db
@@ -144,7 +130,7 @@ def click_find(bot, message):
         conn = sqlite3.connect('database/list.db')
         c = conn.cursor()
     
-        c.execute('SELECT * FROM users WHERE chat_id = ? AND (translation = ? OR word = ?)', (chat_id, word, word))
+        c.execute('SELECT * FROM users WHERE chat_id = ? AND (translate = ? OR word = ?)', (chat_id, word, word))
         users = c.fetchall()
         
         if len(users) <= 0:
@@ -166,10 +152,7 @@ def click_find(bot, message):
         
         #add word to favourite
 def click_add_favourite(bot, message):
-    
     chat_id = message.chat.id
-    message_date = message.date
-    username = message.from_user.username
 
     # Function to handle the next step after prompting for translation
     def handle_translation_step(message, word):
@@ -180,7 +163,7 @@ def click_add_favourite(bot, message):
             conn = sqlite3.connect('database/list.db')
             c = conn.cursor()
 
-            c.execute('INSERT INTO users (chat_id, word, translation, favourite, username, date) VALUES (?, ?, ?, ?, ?, ?)', (chat_id, word, translation, 1, username, message_date))
+            c.execute('INSERT INTO users (chat_id, word, translate, watchlist) VALUES (?, ?, ?, ?)', (chat_id, word, translation, 1))
             conn.commit()
             bot.send_message(message.chat.id, text=f'The word "{word}" and its translation have been added to your dictionary and favorites✅')
 
@@ -199,14 +182,14 @@ def click_add_favourite(bot, message):
             conn = sqlite3.connect('database/list.db')
             c = conn.cursor()
 
-            c.execute('SELECT * FROM users WHERE chat_id = ? AND (word = ? OR translation = ?)', (chat_id, word, word))
+            c.execute('SELECT * FROM users WHERE chat_id = ? AND (word = ? OR translate = ?)', (chat_id, word, word))
             existing_entry = c.fetchone()
 
             if existing_entry:
-                favourite = existing_entry[4]
+                watchlist = existing_entry[4]
 
-                if favourite == 0:
-                    c.execute('UPDATE users SET favourite = 1 WHERE chat_id = ? AND (word = ? OR translation = ?)', (chat_id, word, word))
+                if watchlist == 0:
+                    c.execute('UPDATE users SET watchlist = 1 WHERE chat_id = ? AND (word = ? OR translate = ?)', (chat_id, word, word))
                     conn.commit()
                     bot.send_message(message.chat.id, text=f'The word "{word}" has been added to your favorites✅')
                 else:
@@ -235,7 +218,7 @@ def click_clear_favourite(bot, message):
         conn = sqlite3.connect('database/list.db')
         c = conn.cursor()
 
-        c.execute('UPDATE users SET favourite = 0 WHERE chat_id = ?', (chat_id,))
+        c.execute('UPDATE users SET watchlist = 0 WHERE chat_id = ?', (chat_id,))
         conn.commit()
 
         count = c.rowcount
@@ -243,9 +226,9 @@ def click_clear_favourite(bot, message):
         conn.close()
 
         if count > 0:
-            bot.send_message(message.chat.id, text="Your favourite has been cleared successfully✅")
+            bot.send_message(message.chat.id, text="Your watchlist has been cleared successfully✅")
         else:
-            bot.send_message(message.chat.id, text="Your favourite is already empty.")
+            bot.send_message(message.chat.id, text="Your watchlist is already empty.")
     else:
         bot.delete_message(message.chat.id, message.message_id)
         bot.delete_message(message.chat.id, message.message_id - 1)
@@ -264,14 +247,14 @@ def click_remove_favourite(bot, message):
             conn = sqlite3.connect('database/list.db')
             c = conn.cursor()
 
-            c.execute('SELECT * FROM users WHERE chat_id = ? AND (word = ? OR translation = ?)', (chat_id, word, word))
+            c.execute('SELECT * FROM users WHERE chat_id = ? AND (word = ? OR translate = ?)', (chat_id, word, word))
             existing_entry = c.fetchone()
 
             if existing_entry:
-                favourite = existing_entry[4]
+                watchlist = existing_entry[4]
                 
-                if favourite == 1:
-                    c.execute('UPDATE users SET favourite = 0 WHERE chat_id = ? AND (word = ? OR translation = ?)', (chat_id ,word, word))
+                if watchlist == 1:
+                    c.execute('UPDATE users SET watchlist = 0 WHERE chat_id = ? AND (word = ? OR translate = ?)', (chat_id ,word, word))
                     conn.commit()
                     bot.send_message(message.chat.id, text=f'The word "{word}" has been removed from your favorites❌')
                 else:
@@ -289,21 +272,20 @@ def click_remove_favourite(bot, message):
 
     #print all elements in watchlist
 def click_show_favourite(bot, message):
+    
     conn = sqlite3.connect('database/list.db')
     c = conn.cursor()
     
     chat_id = message.chat.id
     
-    c.execute('SELECT * FROM users WHERE chat_id = ? AND favourite = 1', (chat_id,))
+    c.execute('SELECT * FROM users WHERE chat_id = ? AND watchlist = 1', (chat_id,))
     favourites = c.fetchall()
     
     if favourites:
         items = ''
         for el in favourites:
             items += f'{el[2]} - {el[3]}\n\n'
-        
-        # Send chunked message
-        send_chunked_message(bot, message.chat.id, "<b><u>The words you're learning now:</u></b>\n\n" + items)
+        bot.send_message(message.chat.id, text="<b><u>The words you're learning now:</u></b>\n\n" + items, parse_mode='html')
     else:
         bot.send_message(message.chat.id, text='Your favorite list is empty')
 
@@ -315,13 +297,13 @@ def click_show_favourite(bot, message):
     #       
 def callback_message(bot, callback):
     if callback.data == 'add':
-        bot.send_message(callback.message.chat.id, text="Enter the word you'd like to add")
+        bot.send_message(callback.message, text="Enter the word you'd like to add")
         bot.register_next_step_handler(callback.message, lambda message: click_add(bot, message))
     elif callback.data == 'remove':
-        bot.send_message(callback.message.chat.id, text="Enter the word you want to delete")
+        bot.send_message(callback.message, text="Enter the word you want to delete")
         bot.register_next_step_handler(callback.message, lambda message: click_remove(bot, message))
     elif callback.data == 'find':
-        bot.send_message(callback.message.chat.id, text="Enter the word you want to find")
+        bot.send_message(callback.message, text="Enter the word you want to find")
         bot.register_next_step_handler(callback.message, lambda message: click_find(bot, message))
     elif callback.data == 'show':
         click_show(bot, callback.message)
@@ -329,7 +311,7 @@ def callback_message(bot, callback):
         bot.send_message(callback.message.chat.id, text='Are you sure you want to delete all words from the dictionary❓ Type y / n')
         bot.register_next_step_handler(callback.message, lambda message: click_clear(bot, message))
     elif callback.data == 'add_favourite':
-        bot.send_message(callback.message.chat.id, text="Enter a word you'd like to add to favorites")
+        bot.send_message(callback.message, text="Enter a word you'd like to add to favorites")
         bot.register_next_step_handler(callback.message, lambda message: click_add_favourite(bot, message))
     elif callback.data == 'show_favourite':
         click_show_favourite(bot, callback.message)
@@ -337,7 +319,7 @@ def callback_message(bot, callback):
         bot.send_message(callback.message.chat.id, text='Are you sure you want to delete all words from favourites❓ Type y / n')
         bot.register_next_step_handler(callback.message, lambda message: click_clear_favourite(bot, message))
     elif callback.data == 'remove_favourite':
-        bot.send_message(callback.message.chat.id, text="Enter the word you want to delete from favourites")
+        bot.send_message(callback.message, text="Enter the word you want to delete from favourites")
         bot.register_next_step_handler(callback.message, lambda message: click_remove_favourite(bot, message))
     elif callback.data == 'help':
         start(bot, callback.message)
@@ -353,7 +335,7 @@ def create_database():
     conn = sqlite3.connect('database/list.db')
     cur = conn.cursor()
     
-    cur.execute('CREATE TABLE IF NOT EXISTS "users" ("id" INTEGER NOT NULL, "chat_id" blob, "word" blob, "translation" blob, "favourite" INTEGER, "username" blob, "date" blob,PRIMARY KEY("id" AUTOINCREMENT));')
+    cur.execute('CREATE TABLE IF NOT EXISTS "users" ("id" INTEGER NOT NULL, "chat_id" blob, "word" blob, "translate" blob, "watchlist" INTEGER, "username" blob, PRIMARY KEY("id" AUTOINCREMENT));')
     conn.commit()
     
     cur.close()
