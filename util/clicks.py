@@ -340,7 +340,7 @@ def replace_list_db_on_google_drive():
 def start_replacing():
     while True:
         replace_list_db_on_google_drive()
-        n = 30
+        n = 600
         time.sleep(n)  
         print(f'Time sleep: {n/60} minutes')
         # Sleep for 20 minutes before the next update
