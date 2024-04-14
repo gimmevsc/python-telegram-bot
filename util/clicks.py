@@ -1,7 +1,17 @@
 import sqlite3
+import io
+from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+import time
+
+credentials = service_account.Credentials.from_service_account_file('service-account.json')
+drive_service = build('drive', 'v3', credentials=credentials)
+
 
 #add word and it's translation to list.db
 def click_add(bot, message):
+    
     user_input = message.text.strip().lower()
 
     # Function to handle the next step after prompting for translation
@@ -9,7 +19,8 @@ def click_add(bot, message):
         
         translation = message.text.strip().lower()
 
-        if translation:
+        if translation and all(char not in translation for char in ['<', '>']):
+            
             word = user_input
             word = word.strip()
 
@@ -29,8 +40,7 @@ def click_add(bot, message):
         else:
             bot.send_message(message.chat.id, text="Invalid input. Please provide the translation for the word.")
 
-    if user_input:
-        # Prompt the user to enter the translation directly
+    if user_input and all(char not in user_input for char in ['<', '>']):
         bot.send_message(message.chat.id, text="Please enter the translation for the word:")
         bot.register_next_step_handler(message, handle_translation_step)
     else:
@@ -291,3 +301,46 @@ def click_show_favourite(bot, message):
     conn.commit()
     c.close()
     conn.close()
+
+
+# Function to download the database file from Google Drive
+def download_database():
+    file_id = '1lU-SkxZBuObG54NgNallZKMfOEDDhXCo'  # Replace 'YOUR_FILE_ID' with the ID of your database file on Google Drive
+    request = drive_service.files().get_media(fileId=file_id)
+    fh = io.BytesIO()
+    downloader = MediaIoBaseDownload(fh, request)
+    done = False
+    while done is False:
+        status, done = downloader.next_chunk()
+        print("Download database from Google Drive: %d%%." % int(status.progress() * 100))
+    with open('database/list.db', 'wb') as f:
+        f.write(fh.getbuffer())
+        
+        
+    
+def replace_list_db_on_google_drive():
+    SCOPES = ['https://www.googleapis.com/auth/drive']
+    SERVICE_ACCOUNT_FILE = 'service-account.json'
+
+    credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    drive_service = build('drive', 'v3', credentials=credentials)
+
+    # Replace 'YOUR_FILE_ID' with the ID of the existing list.db file on Google Drive
+    file_id = '1lU-SkxZBuObG54NgNallZKMfOEDDhXCo'
+
+    media = MediaFileUpload('database/list.db', resumable=True)
+
+    # Update the existing file with the new list.db
+    drive_service.files().update(fileId=file_id, media_body=media).execute()
+
+    print('list.db file on Google Drive has been updated.')
+    
+    
+# Function to periodically replace list.db on Google Drive
+def start_replacing():
+    while True:
+        replace_list_db_on_google_drive()
+        n = 30
+        time.sleep(n)  
+        print(f'Time sleep: {n/60} minutes')
+        # Sleep for 20 minutes before the next update

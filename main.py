@@ -2,14 +2,22 @@
 #!/usr/bin/env python
 import telebot
 from telebot import types
-import sqlite3
-from util.clicks import click_add, click_clear, click_remove, click_show, click_find, click_add_favourite, click_remove_favourite, click_show_favourite, click_clear_favourite
+import threading
+from util.clicks import click_add, click_clear, click_remove, click_show, click_find, click_add_favourite, click_remove_favourite, click_show_favourite, click_clear_favourite, download_database, start_replacing
 from keep_alive import keep_alive
 
 keep_alive()
 
 bot = telebot.TeleBot('7049056882:AAGwFBH9Yrv9Ruy81IrdQQmyMeGWJd-0dBw')
 
+# Call the function to download the database file
+download_database()
+
+# Create a background thread to run the start_replacing function (replace list.db on Google Drive every 20 minutes (1200))
+replacing_thread = threading.Thread(target=start_replacing)
+replacing_thread.start()
+
+#
 @bot.message_handler(commands=['start'])
 def start(message):
     murkup = types.ReplyKeyboardMarkup()
@@ -45,14 +53,14 @@ def start(message):
                                     '<em>/show: Show all words in the dictionary</em>\n'
                                     '<em>/clear: Delete all words from the dictionary</em>\n' , reply_markup=murkup, parse_mode='html')
     
-    conn = sqlite3.connect('database/list.db')
-    cur = conn.cursor()
+    # conn = sqlite3.connect('database/list.db')
+    # cur = conn.cursor()
     
-    cur.execute('CREATE TABLE IF NOT EXISTS "users" ("id" INTEGER NOT NULL, "chat_id" blob, "word" blob, "translate" blob, "watchlist" INTEGER, "username" blob, PRIMARY KEY("id" AUTOINCREMENT));')
-    conn.commit()
+    # cur.execute('CREATE TABLE IF NOT EXISTS "users" ("id" INTEGER NOT NULL, "chat_id" blob, "word" blob, "translate" blob, "watchlist" INTEGER, "username" blob, PRIMARY KEY("id" AUTOINCREMENT));')
+    # conn.commit()
     
-    cur.close()
-    conn.close()
+    # cur.close()
+    # conn.close()
     
     
     #buttons under photo
