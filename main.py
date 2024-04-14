@@ -29,12 +29,12 @@ def start(message):
     btn6 = types.KeyboardButton('Homepage')
     btn8 = types.KeyboardButton('Add to ☆')
     btn9 = types.KeyboardButton('Show ☆')
-    btn14 = types.KeyboardButton('Clear ☆')
     btn10 = types.KeyboardButton('Remove fr ☆')
     btn11 = types.KeyboardButton('Help')
+    btn12 = types.KeyboardButton('Clear ☆')
     murkup.row(btn1, btn2)
     murkup.row(btn3, btn8, btn5)
-    murkup.row(btn10, btn14, btn9)
+    murkup.row(btn10, btn12, btn9)
     murkup.row(btn4, btn6, btn11)
     
     bot.send_message(message.chat.id, '<b><u>📖DICTIONARY📖</u></b> \n'
@@ -83,7 +83,7 @@ def home(message):
     murkup.row(btn4, btn5)
     murkup.row(btn10, btn11, btn9)
     murkup.row(btn6, btn8, btn7)
-    bot.send_photo(message.chat.id, photo=open('home_photo.png', 'rb'), reply_markup=murkup)
+    bot.send_photo(message.chat.id, photo=open('img/home_photo.png', 'rb'), reply_markup=murkup)
 
 
     #keyboard buttons
