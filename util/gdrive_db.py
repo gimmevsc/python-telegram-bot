@@ -11,7 +11,7 @@ drive_service = build('drive', 'v3', credentials=credentials)
 
     # Function to download the database file from Google Drive
 def download_database():
-    file_id = '1lU-SkxZBuObG54NgNallZKMfOEDDhXCo'  # Replace 'YOUR_FILE_ID' with the ID of your database file on Google Drive
+    file_id = 'YOUR_FILE_ID'  # Replace 'YOUR_FILE_ID' with the ID of your database file on Google Drive
     request = drive_service.files().get_media(fileId=file_id)
     fh = io.BytesIO()
     downloader = MediaIoBaseDownload(fh, request)
@@ -32,7 +32,7 @@ def replace_list_db_on_google_drive():
     drive_service = build('drive', 'v3', credentials=credentials)
 
     # Replace 'YOUR_FILE_ID' with the ID of the existing list.db file on Google Drive
-    file_id = '1lU-SkxZBuObG54NgNallZKMfOEDDhXCo'
+    file_id = 'YOUR_FILE_ID'
 
     media = MediaFileUpload('database/list.db', resumable=True)
 
